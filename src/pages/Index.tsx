@@ -8,21 +8,9 @@ import { ReminderList } from '@/components/ReminderList';
 import { CalendarView } from '@/components/CalendarView';
 import { StatsPanel } from '@/components/StatsPanel';
 import { useAuth } from '@/contexts/AuthContext';
-import { useReminders } from '@/hooks/useReminders';
+import { useReminders, type Reminder } from '@/hooks/useReminders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
-export interface Reminder {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  note: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  created_at: string;
-  user_id: string;
-}
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -83,13 +71,17 @@ const Index = () => {
     );
   }
 
-  const handleAddReminder = async (reminderData: Omit<Reminder, 'id' | 'completed' | 'created_at' | 'user_id'>) => {
-    await addReminder(reminderData);
+  const handleAddReminder = async (reminderData: Omit<Reminder, 'id' | 'completed' | 'created_at' | 'updated_at' | 'user_id'>) => {
+    console.log('Adding reminder:', reminderData);
+    const result = await addReminder(reminderData);
+    console.log('Add reminder result:', result);
     setShowReminderForm(false);
   };
 
   const handleUpdateReminder = async (id: string, updates: Partial<Reminder>) => {
-    await updateReminder(id, updates);
+    console.log('Updating reminder:', id, updates);
+    const result = await updateReminder(id, updates);
+    console.log('Update reminder result:', result);
     setEditingReminder(null);
   };
 
