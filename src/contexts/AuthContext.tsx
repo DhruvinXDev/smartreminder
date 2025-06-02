@@ -10,6 +10,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resendConfirmation: (email: string) => Promise<{ error: any }>;
+  handleEmailConfirmation: () => Promise<{ error: any; success?: boolean }>;
   loading: boolean;
 }
 
@@ -31,11 +32,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Handle email confirmation
+        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+          console.log('Email confirmed and user signed in');
+        }
       }
     );
 
@@ -52,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     console.log('Attempting to sign up user:', email);
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/auth?confirmed=true`;
     
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -117,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resendConfirmation = async (email: string) => {
     console.log('Resending confirmation email to:', email);
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/auth?confirmed=true`;
     
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -129,6 +135,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     console.log('Resend confirmation result:', { error });
     return { error };
+  };
+
+  const handleEmailConfirmation = async () => {
+    console.log('Handling email confirmation from URL');
+    
+    try {
+      // Check if we're handling a confirmation
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      // Check for error in URL
+      const error = urlParams.get('error') || hashParams.get('error');
+      const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
+      
+      if (error) {
+        console.log('Confirmation error detected:', error, errorDescription);
+        
+        if (error === 'access_denied' && errorDescription?.includes('expired')) {
+          return { 
+            error: { 
+              message: "The confirmation link has expired. Please request a new confirmation email below." 
+            } 
+          };
+        }
+        
+        return { 
+          error: { 
+            message: errorDescription || "There was an error confirming your email. Please try again." 
+          } 
+        };
+      }
+      
+      // Check for successful confirmation
+      const confirmed = urlParams.get('confirmed');
+      if (confirmed === 'true') {
+        // Clear the URL parameters
+        window.history.replaceState({}, document.title, '/auth');
+        return { error: null, success: true };
+      }
+      
+      return { error: null };
+    } catch (error) {
+      console.error('Error handling email confirmation:', error);
+      return { 
+        error: { 
+          message: "There was an error processing your email confirmation." 
+        } 
+      };
+    }
   };
 
   const signOut = async () => {
@@ -143,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     resendConfirmation,
+    handleEmailConfirmation,
     loading,
   };
 

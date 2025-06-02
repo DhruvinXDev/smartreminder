@@ -16,8 +16,9 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showResendConfirmation, setShowResendConfirmation] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
+  const [confirmationSuccess, setConfirmationSuccess] = useState(false);
   
-  const { signIn, signUp, resendConfirmation, user } = useAuth();
+  const { signIn, signUp, resendConfirmation, handleEmailConfirmation, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -26,6 +27,35 @@ const Auth = () => {
       navigate('/');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    // Handle email confirmation when component mounts
+    const checkConfirmation = async () => {
+      const result = await handleEmailConfirmation();
+      
+      if (result.error) {
+        toast({
+          title: "Confirmation Failed",
+          description: result.error.message,
+          variant: "destructive",
+        });
+        
+        // Show resend option for expired links
+        if (result.error.message.includes('expired')) {
+          setShowResendConfirmation(true);
+        }
+      } else if (result.success) {
+        setConfirmationSuccess(true);
+        toast({
+          title: "Email Confirmed!",
+          description: "Your email has been confirmed successfully. You can now sign in.",
+        });
+        setIsLogin(true);
+      }
+    };
+
+    checkConfirmation();
+  }, [handleEmailConfirmation, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +70,7 @@ const Auth = () => {
           console.log('Login error:', error);
           
           // Show resend confirmation option if email not confirmed
-          if (error.message.includes('confirmation link')) {
+          if (error.message.includes('confirmation link') || error.message.includes('Email not confirmed')) {
             setShowResendConfirmation(true);
             setConfirmationEmail(email);
           }
@@ -133,12 +163,15 @@ const Auth = () => {
             SR
           </div>
           <CardTitle className="text-2xl font-bold">
-            {isLogin ? 'Welcome back' : 'Create account'}
+            {confirmationSuccess ? 'Email Confirmed!' : (isLogin ? 'Welcome back' : 'Create account')}
           </CardTitle>
           <CardDescription>
-            {isLogin 
-              ? 'Sign in to your SmartReminder account' 
-              : 'Get started with SmartReminder today'
+            {confirmationSuccess 
+              ? 'Your email has been confirmed. You can now sign in to your account.'
+              : (isLogin 
+                ? 'Sign in to your SmartReminder account' 
+                : 'Get started with SmartReminder today'
+              )
             }
           </CardDescription>
         </CardHeader>
@@ -232,6 +265,7 @@ const Auth = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setShowResendConfirmation(false);
+                setConfirmationSuccess(false);
               }}
               className="text-sm text-blue-600 hover:text-blue-500"
             >
@@ -240,13 +274,6 @@ const Auth = () => {
                 : "Already have an account? Sign in"
               }
             </button>
-          </div>
-
-          <div className="mt-4 text-center">
-            <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
-              <strong>Development Note:</strong> If you're testing and want to skip email confirmation, 
-              you can disable it in your Supabase project settings under Authentication → Settings → "Confirm email".
-            </div>
           </div>
         </CardContent>
       </Card>
