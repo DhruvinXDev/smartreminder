@@ -1,12 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Dashboard } from '@/components/Dashboard';
 import { ReminderForm } from '@/components/ReminderForm';
 import { ReminderList } from '@/components/ReminderList';
 import { CalendarView } from '@/components/CalendarView';
 import { StatsPanel } from '@/components/StatsPanel';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useReminders } from '@/hooks/useReminders';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export interface Reminder {
   id: string;
@@ -16,16 +20,18 @@ export interface Reminder {
   note: string;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
-  createdAt: string;
+  created_at: string;
+  user_id: string;
 }
 
 const Index = () => {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const { user, loading: authLoading } = useAuth();
+  const { reminders, loading: remindersLoading, addReminder, updateReminder, deleteReminder } = useReminders();
   const [currentView, setCurrentView] = useState<'dashboard' | 'list' | 'calendar' | 'stats'>('dashboard');
   const [showReminderForm, setShowReminderForm] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
   const [darkMode, setDarkMode] = useState(false);
-  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Load theme preference
@@ -34,54 +40,57 @@ const Index = () => {
       setDarkMode(true);
       document.documentElement.classList.add('dark');
     }
-
-    // Load saved reminders
-    const savedReminders = localStorage.getItem('smartreminder-data');
-    if (savedReminders) {
-      setReminders(JSON.parse(savedReminders));
-    }
   }, []);
 
-  const saveReminders = (newReminders: Reminder[]) => {
-    setReminders(newReminders);
-    localStorage.setItem('smartreminder-data', JSON.stringify(newReminders));
-  };
-
-  const addReminder = (reminderData: Omit<Reminder, 'id' | 'completed' | 'createdAt'>) => {
-    const newReminder: Reminder = {
-      ...reminderData,
-      id: Date.now().toString(),
-      completed: false,
-      createdAt: new Date().toISOString(),
-    };
-    const updatedReminders = [...reminders, newReminder];
-    saveReminders(updatedReminders);
-    setShowReminderForm(false);
-    toast({
-      title: "Reminder Created",
-      description: "Your reminder has been successfully created!",
-    });
-  };
-
-  const updateReminder = (id: string, updates: Partial<Reminder>) => {
-    const updatedReminders = reminders.map(reminder =>
-      reminder.id === id ? { ...reminder, ...updates } : reminder
+  // Show loading screen while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
+            SR
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
     );
-    saveReminders(updatedReminders);
-    setEditingReminder(null);
-    toast({
-      title: "Reminder Updated",
-      description: "Your reminder has been successfully updated!",
-    });
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
+              SR
+            </div>
+            <CardTitle className="text-2xl font-bold">Welcome to SmartReminder</CardTitle>
+            <CardDescription>
+              Sign in to manage your reminders and stay organized
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => navigate('/auth')}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            >
+              Get Started
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const handleAddReminder = async (reminderData: Omit<Reminder, 'id' | 'completed' | 'created_at' | 'user_id'>) => {
+    await addReminder(reminderData);
+    setShowReminderForm(false);
   };
 
-  const deleteReminder = (id: string) => {
-    const updatedReminders = reminders.filter(reminder => reminder.id !== id);
-    saveReminders(updatedReminders);
-    toast({
-      title: "Reminder Deleted",
-      description: "Your reminder has been successfully deleted!",
-    });
+  const handleUpdateReminder = async (id: string, updates: Partial<Reminder>) => {
+    await updateReminder(id, updates);
+    setEditingReminder(null);
   };
 
   const toggleTheme = () => {
@@ -104,6 +113,14 @@ const Index = () => {
   };
 
   const renderCurrentView = () => {
+    if (remindersLoading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Loading reminders...</p>
+        </div>
+      );
+    }
+
     switch (currentView) {
       case 'list':
         return (
@@ -111,7 +128,7 @@ const Index = () => {
             reminders={reminders}
             onEdit={setEditingReminder}
             onDelete={deleteReminder}
-            onToggleComplete={updateReminder}
+            onToggleComplete={handleUpdateReminder}
           />
         );
       case 'calendar':
@@ -160,8 +177,8 @@ const Index = () => {
         <ReminderForm
           reminder={editingReminder}
           onSubmit={editingReminder ? 
-            (data) => updateReminder(editingReminder.id, data) : 
-            addReminder
+            (data) => handleUpdateReminder(editingReminder.id, data) : 
+            handleAddReminder
           }
           onClose={() => {
             setShowReminderForm(false);

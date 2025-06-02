@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Bell, Plus, Sun, Moon, Calendar, List, BarChart3, Home } from 'lucide-react';
+import { Bell, Plus, Sun, Moon, Calendar, List, BarChart3, Home, LogOut, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
   currentView: string;
@@ -20,12 +21,18 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   onCreateReminder,
 }) => {
+  const { user, signOut } = useAuth();
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'list', label: 'List View', icon: List },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'stats', label: 'Statistics', icon: BarChart3 },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <header className={`sticky top-0 z-50 backdrop-blur-lg border-b transition-all duration-300 ${
@@ -72,6 +79,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Actions */}
           <div className="flex items-center space-x-3">
+            {/* User Info */}
+            {user && (
+              <div className={`hidden md:flex items-center space-x-2 px-3 py-1 rounded-lg ${
+                darkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}>
+                <User className="w-4 h-4" />
+                <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {user.email}
+                </span>
+              </div>
+            )}
+
             {/* Notification Bell */}
             <div className="relative">
               <Button
@@ -110,6 +129,20 @@ export const Header: React.FC<HeaderProps> = ({
               <Plus className="w-4 h-4 mr-2" />
               New Reminder
             </Button>
+
+            {/* Sign Out Button */}
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className={`hover-scale ${
+                  darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            )}
           </div>
         </div>
 
