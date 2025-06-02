@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Edit, Trash2, Check, Clock, AlertTriangle, Calendar } from 'lucide-react';
@@ -67,7 +68,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ reminders, onEdit, o
                     id={`reminder-${reminder.id}`}
                     checked={reminder.completed}
                     onCheckedChange={(checked) => {
-                      onToggleComplete(reminder.id, { completed: checked || false });
+                      onToggleComplete(reminder.id, { completed: Boolean(checked) });
                     }}
                   />
                   <label

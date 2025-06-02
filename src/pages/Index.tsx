@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { Dashboard } from '@/components/Dashboard';
 import { ReminderForm } from '@/components/ReminderForm';
 import { ReminderList } from '@/components/ReminderList';
-import { CalendarView } from '@/components/CalendarView';
+import CalendarView from '@/components/CalendarView';
 import { StatsPanel } from '@/components/StatsPanel';
 import { useAuth } from '@/contexts/AuthContext';
 import { useReminders, type Reminder } from '@/hooks/useReminders';

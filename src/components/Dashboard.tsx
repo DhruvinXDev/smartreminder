@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Plus, Calendar, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Calendar, Clock, CheckCircle, AlertTriangle, List, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { type Reminder } from '@/hooks/useReminders';

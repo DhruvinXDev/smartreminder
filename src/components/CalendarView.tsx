@@ -18,7 +18,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reminders, onEdit, onDelete
     const dateFormat = "MMMM yyyy";
     return (
       <div className="flex justify-between items-center py-2">
-        <div className="colCol text-gray-500">
+        <div className="flex text-gray-500">
           <ChevronLeft
             className="w-5 h-5 cursor-pointer hover:text-gray-700"
             onClick={() => {
@@ -26,10 +26,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reminders, onEdit, onDelete
             }}
           />
         </div>
-        <div className="colCol text-gray-700 font-semibold">
+        <div className="flex text-gray-700 font-semibold">
           {format(currentMonth, dateFormat)}
         </div>
-        <div className="colCol text-gray-500">
+        <div className="flex text-gray-500">
           <ChevronRight
             className="w-5 h-5 cursor-pointer hover:text-gray-700"
             onClick={() => {
@@ -51,7 +51,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reminders, onEdit, onDelete
     return (
       <div className="grid grid-cols-7 gap-2 py-2">
         {daysInWeek.map((day) => (
-          <div key={day.toString()} className="colCol text-center text-gray-500">
+          <div key={day.toString()} className="flex text-center text-gray-500">
             {format(day, dateFormat)}
           </div>
         ))}
@@ -62,8 +62,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reminders, onEdit, onDelete
   const cells = () => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
-    const startDate = startOfMonth(currentMonth);
-    const endDate = endOfMonth(currentMonth);
 
     const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
@@ -77,7 +75,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ reminders, onEdit, onDelete
           return (
             <div
               key={day.toString()}
-              className={`colCol h-24 p-2 border rounded-md ${
+              className={`flex flex-col h-24 p-2 border rounded-md ${
                 !isSameMonth(day, currentMonth)
                   ? "bg-gray-100"
                   : isToday(day)
