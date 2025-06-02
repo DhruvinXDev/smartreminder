@@ -7,11 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Calendar, Clock, FileText, AlertTriangle } from 'lucide-react';
-import { Reminder } from '@/pages/Index';
+import { Reminder } from '@/hooks/useReminders';
 
 interface ReminderFormProps {
   reminder?: Reminder | null;
-  onSubmit: (data: Omit<Reminder, 'id' | 'completed' | 'createdAt'>) => void;
+  onSubmit: (data: Omit<Reminder, 'id' | 'completed' | 'created_at' | 'updated_at' | 'user_id'>) => void;
   onClose: () => void;
   darkMode: boolean;
 }
@@ -38,8 +38,8 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
         title: reminder.title,
         date: reminder.date,
         time: reminder.time,
-        note: reminder.note,
-        priority: reminder.priority,
+        note: reminder.note || '',
+        priority: reminder.priority as 'low' | 'medium' | 'high',
       });
     }
   }, [reminder]);

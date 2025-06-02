@@ -3,18 +3,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface Reminder {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  note: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  created_at: string;
-  user_id: string;
-}
+// Use the database type directly
+export type Reminder = Database['public']['Tables']['reminders']['Row'];
 
 export const useReminders = () => {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -57,7 +49,7 @@ export const useReminders = () => {
     fetchReminders();
   }, [user]);
 
-  const addReminder = async (reminderData: Omit<Reminder, 'id' | 'completed' | 'created_at' | 'user_id'>) => {
+  const addReminder = async (reminderData: Omit<Reminder, 'id' | 'completed' | 'created_at' | 'updated_at' | 'user_id'>) => {
     if (!user) return { error: 'User not authenticated' };
 
     try {
@@ -95,7 +87,7 @@ export const useReminders = () => {
     }
   };
 
-  const updateReminder = async (id: string, updates: Partial<Reminder>) => {
+  const updateReminder = async (id: string, updates: Partial<Omit<Reminder, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
     if (!user) return { error: 'User not authenticated' };
 
     try {

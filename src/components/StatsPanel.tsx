@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Reminder } from '@/pages/Index';
+import { Reminder } from '@/hooks/useReminders';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Calendar, CheckCircle, Clock, TrendingUp, Target, Award } from 'lucide-react';
 
@@ -50,7 +49,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ reminders }) => {
       const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
       
       const monthReminders = reminders.filter(reminder => {
-        const reminderDate = new Date(reminder.createdAt);
+        const reminderDate = new Date(reminder.created_at);
         return reminderDate.getFullYear() === date.getFullYear() && 
                reminderDate.getMonth() === date.getMonth();
       });
