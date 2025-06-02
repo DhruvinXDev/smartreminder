@@ -6,9 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: any; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  resendConfirmation: (email: string) => Promise<{ error: any }>;
   loading: boolean;
 }
 
@@ -74,9 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check if email confirmation is required
     if (data.user && !data.session) {
       return { 
-        error: { 
-          message: "Please check your email and click the confirmation link to complete your registration. After confirming, you can log in." 
-        } 
+        error: null,
+        needsConfirmation: true
       };
     }
     
@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error.message.includes('Email not confirmed')) {
         return { 
           error: { 
-            message: "Please check your email and click the confirmation link before signing in." 
+            message: "Please check your email and click the confirmation link before signing in. If the link expired, you can request a new one below." 
           } 
         };
       }
@@ -113,6 +113,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     return { error: null };
+  };
+
+  const resendConfirmation = async (email: string) => {
+    console.log('Resending confirmation email to:', email);
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
+    
+    console.log('Resend confirmation result:', { error });
+    return { error };
   };
 
   const signOut = async () => {
@@ -126,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
+    resendConfirmation,
     loading,
   };
 

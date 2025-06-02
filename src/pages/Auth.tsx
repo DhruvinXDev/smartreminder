@@ -14,8 +14,10 @@ const Auth = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
   
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, resendConfirmation, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -28,6 +30,7 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setShowResendConfirmation(false);
 
     try {
       if (isLogin) {
@@ -35,6 +38,13 @@ const Auth = () => {
         const { error } = await signIn(email, password);
         if (error) {
           console.log('Login error:', error);
+          
+          // Show resend confirmation option if email not confirmed
+          if (error.message.includes('confirmation link')) {
+            setShowResendConfirmation(true);
+            setConfirmationEmail(email);
+          }
+          
           toast({
             title: "Login Failed",
             description: error.message,
@@ -49,30 +59,29 @@ const Auth = () => {
         }
       } else {
         console.log('Attempting signup for:', email);
-        const { error } = await signUp(email, password, firstName, lastName);
+        const { error, needsConfirmation } = await signUp(email, password, firstName, lastName);
         if (error) {
           console.log('Signup error:', error);
-          if (error.message.includes('check your email')) {
-            toast({
-              title: "Check Your Email",
-              description: error.message,
-              variant: "default",
-            });
-          } else {
-            toast({
-              title: "Signup Failed",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
+          toast({
+            title: "Signup Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else if (needsConfirmation) {
+          toast({
+            title: "Check Your Email",
+            description: "Please check your email and click the confirmation link to complete your registration.",
+          });
+          setShowResendConfirmation(true);
+          setConfirmationEmail(email);
+          setIsLogin(true);
+          setPassword('');
         } else {
           toast({
             title: "Account Created",
-            description: "Please check your email to verify your account before signing in.",
+            description: "Your account has been created successfully!",
           });
-          // Switch to login mode after successful signup
-          setIsLogin(true);
-          setPassword(''); // Clear password for security
+          navigate('/');
         }
       }
     } catch (error) {
@@ -80,6 +89,35 @@ const Auth = () => {
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!confirmationEmail) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await resendConfirmation(confirmationEmail);
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email Sent",
+          description: "A new confirmation email has been sent. Please check your inbox.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to resend confirmation email.",
         variant: "destructive",
       });
     } finally {
@@ -103,11 +141,6 @@ const Auth = () => {
               : 'Get started with SmartReminder today'
             }
           </CardDescription>
-          {isLogin && (
-            <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg mt-2">
-              <strong>Note:</strong> If you just signed up, please check your email and confirm your account before signing in.
-            </div>
-          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -175,11 +208,31 @@ const Auth = () => {
               {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}
             </Button>
           </form>
+
+          {showResendConfirmation && confirmationEmail && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800 mb-2">
+                Haven't received the confirmation email or the link expired?
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResendConfirmation}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? 'Sending...' : 'Resend Confirmation Email'}
+              </Button>
+            </div>
+          )}
           
           <div className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setShowResendConfirmation(false);
+              }}
               className="text-sm text-blue-600 hover:text-blue-500"
             >
               {isLogin 
@@ -187,6 +240,13 @@ const Auth = () => {
                 : "Already have an account? Sign in"
               }
             </button>
+          </div>
+
+          <div className="mt-4 text-center">
+            <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+              <strong>Development Note:</strong> If you're testing and want to skip email confirmation, 
+              you can disable it in your Supabase project settings under Authentication → Settings → "Confirm email".
+            </div>
           </div>
         </CardContent>
       </Card>
