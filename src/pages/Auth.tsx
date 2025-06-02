@@ -31,8 +31,10 @@ const Auth = () => {
 
     try {
       if (isLogin) {
+        console.log('Attempting login for:', email);
         const { error } = await signIn(email, password);
         if (error) {
+          console.log('Login error:', error);
           toast({
             title: "Login Failed",
             description: error.message,
@@ -43,23 +45,38 @@ const Auth = () => {
             title: "Welcome back!",
             description: "You have successfully logged in.",
           });
+          navigate('/');
         }
       } else {
+        console.log('Attempting signup for:', email);
         const { error } = await signUp(email, password, firstName, lastName);
         if (error) {
-          toast({
-            title: "Signup Failed",
-            description: error.message,
-            variant: "destructive",
-          });
+          console.log('Signup error:', error);
+          if (error.message.includes('check your email')) {
+            toast({
+              title: "Check Your Email",
+              description: error.message,
+              variant: "default",
+            });
+          } else {
+            toast({
+              title: "Signup Failed",
+              description: error.message,
+              variant: "destructive",
+            });
+          }
         } else {
           toast({
             title: "Account Created",
-            description: "Please check your email to verify your account.",
+            description: "Please check your email to verify your account before signing in.",
           });
+          // Switch to login mode after successful signup
+          setIsLogin(true);
+          setPassword(''); // Clear password for security
         }
       }
     } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -86,6 +103,11 @@ const Auth = () => {
               : 'Get started with SmartReminder today'
             }
           </CardDescription>
+          {isLogin && (
+            <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg mt-2">
+              <strong>Note:</strong> If you just signed up, please check your email and confirm your account before signing in.
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -141,6 +163,7 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
               />
             </div>
             

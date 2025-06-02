@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -49,9 +50,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
+    console.log('Attempting to sign up user:', email);
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -62,18 +64,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     });
-    return { error };
+    
+    console.log('Sign up result:', { data, error });
+    
+    if (error) {
+      return { error };
+    }
+    
+    // Check if email confirmation is required
+    if (data.user && !data.session) {
+      return { 
+        error: { 
+          message: "Please check your email and click the confirmation link to complete your registration. After confirming, you can log in." 
+        } 
+      };
+    }
+    
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    console.log('Attempting to sign in user:', email);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+    
+    console.log('Sign in result:', { data, error });
+    
+    if (error) {
+      // Provide more helpful error messages
+      if (error.message.includes('Invalid login credentials')) {
+        return { 
+          error: { 
+            message: "Invalid email or password. If you just signed up, please check your email and confirm your account first." 
+          } 
+        };
+      }
+      if (error.message.includes('Email not confirmed')) {
+        return { 
+          error: { 
+            message: "Please check your email and click the confirmation link before signing in." 
+          } 
+        };
+      }
+      return { error };
+    }
+    
+    return { error: null };
   };
 
   const signOut = async () => {
+    console.log('Signing out user');
     await supabase.auth.signOut();
   };
 

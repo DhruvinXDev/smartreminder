@@ -1,9 +1,8 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Calendar, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Reminder } from '@/pages/Index';
-import { Clock, CheckCircle, AlertTriangle, Plus, Calendar, List, BarChart3 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { type Reminder } from '@/hooks/useReminders';
 
 interface DashboardProps {
   reminders: Reminder[];
